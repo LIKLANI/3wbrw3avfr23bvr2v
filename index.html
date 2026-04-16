@@ -3,110 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PC Remote Control</title>
+    <title>Hysteria Remote</title>
     <style>
-        body {
-            background: #1a1a1a;
-            color: white;
-            text-align: center;
-            font-family: sans-serif;
-            margin: 0;
-            padding: 10px;
-            /* Запрещаем выделение текста при долгом тапе на телефоне */
-            user-select: none; 
-            -webkit-user-select: none;
-        }
-
-        /* ТАЧПАД */
-        .pad {
-            width: 90%;
-            max-width: 400px;
-            height: 250px;
-            background: #333;
-            margin: 10px auto;
-            border-radius: 15px;
-            border: 2px solid #555;
-            touch-action: none; /* Чтобы страница не скроллилась при движении пальца */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #777;
-        }
-
-        /* КНОПКИ МЫШИ */
-        .mouse-btns {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .mouse-btn {
-            padding: 15px 30px;
-            font-size: 16px;
-            border-radius: 10px;
-            border: none;
-            background: #0088cc;
-            color: white;
-            cursor: pointer;
-            width: 120px;
-            /* Анимация плавности */
-            transition: transform 0.1s, background-color 0.1s; 
-        }
-
-        /* АНИМАЦИЯ НАЖАТИЯ */
-        .mouse-btn:active, .key:active {
-            transform: scale(0.92); /* Уменьшается при нажатии */
-            background-color: #005f8f;
-        }
-
-        /* КЛАВИАТУРА */
-        .keyboard {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            max-width: 800px;
-            margin: 0 auto;
-            overflow-x: auto; /* Чтобы на маленьких экранах можно было сдвинуть */
-            padding-bottom: 20px;
-        }
-
-        .row {
-            display: flex;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        .key {
-            background: #2a2a2d;
-            border: 1px solid #111;
-            border-radius: 6px;
-            color: #ccc;
-            padding: 12px 10px;
-            min-width: 30px;
-            font-size: 14px;
-            cursor: pointer;
-            box-shadow: 0 2px 0 #111;
-            transition: transform 0.1s, background-color 0.1s, box-shadow 0.1s;
-        }
-
-        /* Спец-клавиши делаем чуть шире */
-        .key.wide { min-width: 60px; }
-        .key.extra-wide { min-width: 150px; } /* Для пробела */
+        body { background: #1a1a1a; color: white; text-align: center; font-family: sans-serif; margin: 0; padding: 10px; user-select: none; -webkit-user-select: none; }
+        .pad { width: 95%; max-width: 500px; height: 200px; background: #222; margin: 10px auto; border-radius: 15px; border: 2px solid #444; touch-action: none; display: flex; align-items: center; justify-content: center; color: #555; }
         
-        /* Цвета для спец клавиш как на скрине */
-        .key.green-toggle { background: #008000; color: white; }
+        .mouse-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px auto; max-width: 500px; }
+        .mouse-btn { padding: 12px; font-size: 14px; border-radius: 8px; border: none; background: #0088cc; color: white; transition: transform 0.05s, background 0.1s; }
+        .mouse-btn:active { transform: scale(0.95); background: #005f8f; }
+
+        .keyboard { display: flex; flex-direction: column; gap: 5px; margin-top: 15px; overflow-x: auto; padding-bottom: 20px; }
+        .row { display: flex; justify-content: center; gap: 4px; }
+        .key { background: #2a2a2d; border: 1px solid #111; border-radius: 5px; color: #ccc; padding: 12px 8px; min-width: 32px; font-size: 13px; box-shadow: 0 2px 0 #000; transition: all 0.05s; }
+        
+        /* Стиль для зажатой клавиши */
+        .key.active { background: #555; transform: translateY(2px); box-shadow: none; color: #fff; }
+        .key.green { background: #2d5a27; }
+        .key.wide { min-width: 60px; }
+        .key.extra-wide { min-width: 140px; }
     </style>
 </head>
 <body>
 
-    <h3>PC REMOTE CONTROL</h3>
-
     <div class="pad" id="touchpad">ТАЧПАД</div>
 
     <div class="mouse-btns">
-        <button class="mouse-btn" onclick="sendCmd('click')">ЛЕВАЯ</button>
-        <button class="mouse-btn" onclick="sendCmd('rclick')">ПРАВАЯ</button>
+        <button class="mouse-btn" onclick="sendCmd('click')">ЛКМ</button>
+        <button class="mouse-btn" onclick="sendCmd('double_click')">2x ЛКМ</button>
+        <button class="mouse-btn" onclick="sendCmd('rclick')">ПКМ</button>
+        <button class="mouse-btn" onclick="sendCmd('move_x_1cm')">+X 1см</button>
+        <button class="mouse-btn" onclick="sendCmd('move_y_1cm')">+Y 1см</button>
+        <button class="mouse-btn" onclick="location.reload()">RELOAD</button>
     </div>
 
     <div class="keyboard" id="keyboard"></div>
@@ -115,81 +42,57 @@
         const DB_URL = "https://hysteriadb-519c4-default-rtdb.firebaseio.com/commands/input.json";
 
         function sendCmd(data) {
-            // Отправляем команду в базу
-            fetch(DB_URL, { 
-                method: 'PUT', 
-                body: JSON.stringify(data) 
-            });
-            // Вибрация телефона при нажатии (работает на Android)
-            if (navigator.vibrate) navigator.vibrate(20);
+            fetch(DB_URL, { method: 'PUT', body: JSON.stringify(data) });
+            if (navigator.vibrate) navigator.vibrate(15);
         }
 
-        // --- ЛОГИКА ТАЧПАДА ---
+        // Движение мыши
         const pad = document.getElementById('touchpad');
         pad.addEventListener('touchmove', (e) => {
+            e.preventDefault();
             const touch = e.touches[0];
             const rect = pad.getBoundingClientRect();
-            // Примерное масштабирование
             const x = Math.round((touch.clientX - rect.left) / rect.width * 1920);
             const y = Math.round((touch.clientY - rect.top) / rect.height * 1080);
-            
-            // Чтобы не спамить базу слишком часто, можно добавить таймер, 
-            // но пока оставляем прямую отправку
             sendCmd(`move:${x},${y}`);
         });
 
-        // --- ГЕНЕРАЦИЯ КЛАВИАТУРЫ ---
-        // Раскладка кнопок
+        // Клавиатура с поддержкой удержания (touchstart/touchend)
         const layout = [
             ['Esc', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12'],
             ['`', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 'Backspace'],
             ['Tab', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']', '\\'],
             ['Caps', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', "'", 'Enter'],
             ['Shift', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', ',', '.', '/', 'Shift'],
-            ['Ctrl', 'Win', 'Alt', 'Space', 'Alt', 'Win', 'Menu', 'Ctrl']
+            ['Ctrl', 'Win', 'Alt', 'Space', 'Alt', 'Win', 'Ctrl']
         ];
 
-        const kbContainer = document.getElementById('keyboard');
-
-        layout.forEach(rowKeys => {
+        const kb = document.getElementById('keyboard');
+        layout.forEach(row => {
             const rowDiv = document.createElement('div');
             rowDiv.className = 'row';
-            
-            rowKeys.forEach(keyName => {
+            row.forEach(name => {
                 const btn = document.createElement('div');
                 btn.className = 'key';
-                btn.innerText = keyName;
+                btn.innerText = name;
+                if (['Shift', 'Win'].includes(name)) btn.classList.add('green');
+                if (['Enter', 'Backspace', 'Tab', 'Caps', 'Shift', 'Ctrl'].includes(name)) btn.classList.add('wide');
+                if (name === 'Space') btn.classList.add('extra-wide');
 
-                // Делаем некоторые кнопки шире
-                if (['Backspace', 'Tab', 'Caps', 'Enter', 'Shift', 'Ctrl', 'Alt'].includes(keyName)) {
-                    btn.classList.add('wide');
-                }
-                if (keyName === 'Space') {
-                    btn.classList.add('extra-wide');
-                }
-                // Красим Shift и Win в зеленый, как на фото
-                if (keyName === 'Shift' || keyName === 'Win') {
-                    btn.classList.add('green-toggle');
-                }
-
-                // Обработчик нажатия. Отправляем в базу "key:ИмяКлавиши"
+                // Логика зажатия
                 btn.addEventListener('touchstart', (e) => {
-                    e.preventDefault(); // Убираем стандартное поведение телефона
-                    btn.style.transform = 'scale(0.9)'; // Визуальное нажатие
-                    sendCmd(`key:${keyName}`);
+                    e.preventDefault();
+                    btn.classList.add('active');
+                    sendCmd(`down:${name}`);
                 });
-                
-                // Возвращаем кнопку в исходное состояние когда палец отпущен
                 btn.addEventListener('touchend', () => {
-                    btn.style.transform = 'scale(1)';
+                    btn.classList.remove('active');
+                    sendCmd(`up:${name}`);
                 });
-                
-                // Для теста на ПК мышкой
-                btn.addEventListener('mousedown', () => sendCmd(`key:${keyName}`));
 
                 rowDiv.appendChild(btn);
             });
-            kbContainer.appendChild(rowDiv);
+            kb.appendChild(rowDiv);
         });
     </script>
 </body>
