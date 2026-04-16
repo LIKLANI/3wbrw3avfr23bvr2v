@@ -61,6 +61,35 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
         }
 
+        /* Блок для Голоса */
+        .tts-container {
+            margin: 15px auto;
+            max-width: 400px;
+            display: flex;
+            gap: 8px;
+            padding: 0 10px;
+        }
+
+        .tts-input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background: #2a2a2d;
+            color: white;
+            font-size: 14px;
+        }
+
+        .tts-btn {
+            padding: 12px 20px;
+            background: #27ae60;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
         /* Сетка для стрелок перемещения */
         .axis-controls {
             display: grid;
@@ -92,51 +121,23 @@
 
         .keyboard {
             display: flex;
-            flex-direction: column;
-            gap: 5px;
-            max-width: 760px;
-            margin: 0 auto;
-            overflow-x: auto;
-            padding-bottom: 18px;
+            flex-direction: column; gap: 5px; max-width: 760px; margin: 0 auto; overflow-x: auto; padding-bottom: 18px;
         }
 
-        .row {
-            display: flex;
-            justify-content: center;
-            gap: 5px;
-        }
+        .row { display: flex; justify-content: center; gap: 5px; }
 
         .key {
-            background: #2a2a2d;
-            border: 1px solid #111;
-            border-radius: 6px;
-            color: #ccc;
-            padding: 10px 8px;
-            min-width: 28px;
-            font-size: 13px;
-            cursor: pointer;
-            box-shadow: 0 2px 0 #111;
-            transition: transform 0.08s ease, filter 0.08s ease, box-shadow 0.08s ease;
-            -webkit-tap-highlight-color: transparent;
-            transform: translateY(0) scale(1);
+            background: #2a2a2d; border: 1px solid #111; border-radius: 6px; color: #ccc; 
+            padding: 10px 8px; min-width: 28px; font-size: 13px; cursor: pointer;
+            box-shadow: 0 2px 0 #111; transition: transform 0.08s ease, filter 0.08s ease, box-shadow 0.08s ease;
+            -webkit-tap-highlight-color: transparent; transform: translateY(0) scale(1);
         }
 
-        .key:active,
-        .key.pressed {
-            transform: translateY(2px) scale(0.96);
-            filter: brightness(0.88);
-            box-shadow: 0 0 0 #111;
-        }
-
+        .key:active, .key.pressed { transform: translateY(2px) scale(0.96); filter: brightness(0.88); box-shadow: 0 0 0 #111; }
         .key.wide { min-width: 54px; }
         .key.extra-wide { min-width: 138px; }
         .key.green-toggle { background: #008000; color: white; }
-
-        .pressable {
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: manipulation;
-        }
+        .pressable { user-select: none; -webkit-user-select: none; touch-action: manipulation; }
     </style>
 </head>
 <body>
@@ -144,6 +145,11 @@
     <h3>PC REMOTE CONTROL</h3>
 
     <div class="pad" id="touchpad">ТАЧПАД</div>
+
+    <div class="tts-container">
+        <input type="text" id="ttsText" class="tts-input" placeholder="Введите текст...">
+        <button class="tts-btn" onclick="sayText()">СКАЗАТЬ</button>
+    </div>
 
     <div class="mouse-btns">
         <button class="mouse-btn" onclick="sendCmd('click')">ЛЕВАЯ</button>
@@ -171,10 +177,8 @@
 function bindPressAnimation(el) {
     if (!el) return;
     el.classList.add('pressable');
-
     const addPressed = () => el.classList.add('pressed');
     const removePressed = () => el.classList.remove('pressed');
-
     el.addEventListener('touchstart', addPressed, { passive: true });
     el.addEventListener('touchend', removePressed);
     el.addEventListener('touchcancel', removePressed);
@@ -183,25 +187,27 @@ function bindPressAnimation(el) {
     el.addEventListener('mouseleave', removePressed);
 }
 
- function sendCmd(data) {
-    console.log("Отправка команды:", data); // Проверка в консоли
-    
+// Функция для Голоса
+function sayText() {
+    const text = document.getElementById('ttsText').value;
+    if (text) {
+        sendCmd(`tts:${text}`);
+        document.getElementById('ttsText').value = '';
+    }
+}
+
+function sendCmd(data) {
+    console.log("Отправка команды:", data);
     fetch(DB_URL, { 
         method: 'PUT', 
         body: JSON.stringify(data),
-        headers: {
-            'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
     })
-    .then(response => {
-        if (!response.ok) console.error("Ошибка сети:", response.statusText);
-    })
+    .then(response => { if (!response.ok) console.error("Ошибка сети:", response.statusText); })
     .catch(err => console.error("Ошибка Fetch:", err));
-
     if (navigator.vibrate) navigator.vibrate(15);
 }
 
-// Тачпад
 document.querySelectorAll('.mouse-btn, .axis-btn').forEach(bindPressAnimation);
 
 const pad = document.getElementById('touchpad');
@@ -214,7 +220,6 @@ pad.addEventListener('touchmove', (e) => {
     sendCmd(`move:${x},${y}`);
 }, { passive: false });
 
-// Клавиатура
 const layout = [
     ['Esc', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12'],
     ['`', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 'Backspace'],
@@ -233,27 +238,20 @@ layout.forEach(rowKeys => {
         btn.className = 'key';
         bindPressAnimation(btn);
         btn.innerText = keyName;
-        
         if (['Backspace', 'Tab', 'Caps', 'Enter', 'Shift', 'Ctrl', 'Alt'].includes(keyName)) btn.classList.add('wide');
         if (keyName === 'Space') btn.classList.add('extra-wide');
         if (keyName === 'Shift' || keyName === 'Win') btn.classList.add('green-toggle');
 
-        // Используем универсальный обработчик
         const handlePress = (e) => {
             e.preventDefault();
-            e.stopPropagation(); // Чтобы событие не дублировалось
+            e.stopPropagation();
             sendCmd(`key:${keyName}`);
         };
 
-        // Слушаем и тач, и клик
         btn.addEventListener('touchstart', handlePress, { passive: false });
         btn.addEventListener('mousedown', (e) => {
-            // Если устройство поддерживает тач, mousedown может дублировать нажатие
-            if (!('ontouchstart' in window)) {
-                handlePress(e);
-            }
+            if (!('ontouchstart' in window)) handlePress(e);
         });
-
         rowDiv.appendChild(btn);
     });
     kbContainer.appendChild(rowDiv);
