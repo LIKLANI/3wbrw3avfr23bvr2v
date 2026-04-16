@@ -3,30 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Hysteria Remote</title>
+    <title>Hysteria Remote Pro</title>
     <style>
-        body { background: #1a1a1a; color: white; text-align: center; font-family: sans-serif; margin: 0; padding: 10px; user-select: none; -webkit-user-select: none; }
-        .pad { width: 95%; max-width: 500px; height: 200px; background: #222; margin: 10px auto; border-radius: 15px; border: 2px solid #444; touch-action: none; display: flex; align-items: center; justify-content: center; color: #555; }
+        body { background: #121212; color: white; text-align: center; font-family: sans-serif; margin: 0; padding: 10px; user-select: none; -webkit-user-select: none; }
+        .pad { width: 95%; max-width: 500px; height: 160px; background: #1e1e1e; margin: 10px auto; border-radius: 15px; border: 2px solid #333; display: flex; align-items: center; justify-content: center; color: #444; touch-action: none; font-weight: bold; }
         
-        .mouse-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px auto; max-width: 500px; }
-        .mouse-btn { padding: 12px; font-size: 14px; border-radius: 8px; border: none; background: #0088cc; color: white; transition: transform 0.05s, background 0.1s; }
-        .mouse-btn:active { transform: scale(0.95); background: #005f8f; }
+        .mouse-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px auto; max-width: 500px; }
+        .mouse-btn { padding: 12px; font-size: 12px; border-radius: 8px; border: none; background: #0088cc; color: white; font-weight: bold; transition: 0.1s; }
+        .mouse-btn:active { background: #ffcc00; color: black; transform: scale(0.95); }
 
         .keyboard { display: flex; flex-direction: column; gap: 5px; margin-top: 15px; overflow-x: auto; padding-bottom: 20px; }
         .row { display: flex; justify-content: center; gap: 4px; }
-        .key { background: #2a2a2d; border: 1px solid #111; border-radius: 5px; color: #ccc; padding: 12px 8px; min-width: 32px; font-size: 13px; box-shadow: 0 2px 0 #000; transition: all 0.05s; }
+        .key { 
+            background: #2a2a2d; border: 1px solid #111; border-radius: 5px; color: #ccc; 
+            padding: 12px 4px; min-width: 32px; font-size: 11px; font-weight: bold;
+            box-shadow: 0 3px 0 #000; transition: all 0.05s;
+        }
         
-        /* Стиль для зажатой клавиши */
-        .key.active { background: #555; transform: translateY(2px); box-shadow: none; color: #fff; }
+        /* Анимация зажатия */
+        .key.active { background: #ffcc00 !important; color: black !important; transform: translateY(3px); box-shadow: none; }
         .key.green { background: #2d5a27; }
         .key.wide { min-width: 60px; }
         .key.extra-wide { min-width: 140px; }
     </style>
 </head>
 <body>
-
     <div class="pad" id="touchpad">ТАЧПАД</div>
-
     <div class="mouse-btns">
         <button class="mouse-btn" onclick="sendCmd('click')">ЛКМ</button>
         <button class="mouse-btn" onclick="sendCmd('double_click')">2x ЛКМ</button>
@@ -35,29 +37,12 @@
         <button class="mouse-btn" onclick="sendCmd('move_y_1cm')">+Y 1см</button>
         <button class="mouse-btn" onclick="location.reload()">RELOAD</button>
     </div>
-
     <div class="keyboard" id="keyboard"></div>
 
     <script>
         const DB_URL = "https://hysteriadb-519c4-default-rtdb.firebaseio.com/commands/input.json";
+        function sendCmd(data) { fetch(DB_URL, { method: 'PUT', body: JSON.stringify(data) }); }
 
-        function sendCmd(data) {
-            fetch(DB_URL, { method: 'PUT', body: JSON.stringify(data) });
-            if (navigator.vibrate) navigator.vibrate(15);
-        }
-
-        // Движение мыши
-        const pad = document.getElementById('touchpad');
-        pad.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            const rect = pad.getBoundingClientRect();
-            const x = Math.round((touch.clientX - rect.left) / rect.width * 1920);
-            const y = Math.round((touch.clientY - rect.top) / rect.height * 1080);
-            sendCmd(`move:${x},${y}`);
-        });
-
-        // Клавиатура с поддержкой удержания (touchstart/touchend)
         const layout = [
             ['Esc', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12'],
             ['`', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 'Backspace'],
@@ -75,21 +60,33 @@
                 const btn = document.createElement('div');
                 btn.className = 'key';
                 btn.innerText = name;
-                if (['Shift', 'Win'].includes(name)) btn.classList.add('green');
-                if (['Enter', 'Backspace', 'Tab', 'Caps', 'Shift', 'Ctrl'].includes(name)) btn.classList.add('wide');
+                if (['Shift', 'Win', 'Caps'].includes(name)) btn.classList.add('green');
+                if (['Enter', 'Backspace', 'Tab', 'Caps', 'Shift', 'Ctrl', 'Win'].includes(name)) btn.classList.add('wide');
                 if (name === 'Space') btn.classList.add('extra-wide');
 
-                // Логика зажатия
-                btn.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    btn.classList.add('active');
-                    sendCmd(`down:${name}`);
-                });
-                btn.addEventListener('touchend', () => {
-                    btn.classList.remove('active');
-                    sendCmd(`up:${name}`);
-                });
+                let touchStartTime;
 
+                btn.onpointerdown = (e) => {
+                    e.preventDefault();
+                    touchStartTime = Date.now();
+                    btn.classList.add('active');
+                    sendCmd(`down:${name}`); // Сразу зажимаем
+                };
+
+                btn.onpointerup = btn.onpointerleave = () => {
+                    if (btn.classList.contains('active')) {
+                        const duration = Date.now() - touchStartTime;
+                        btn.classList.remove('active');
+                        
+                        if (duration < 200) {
+                            // Если нажатие было быстрым, посылаем сигнал "перенажать"
+                            sendCmd(`press:${name}`);
+                        } else {
+                            // Если долго держали, просто отпускаем
+                            sendCmd(`up:${name}`);
+                        }
+                    }
+                };
                 rowDiv.appendChild(btn);
             });
             kb.appendChild(rowDiv);
